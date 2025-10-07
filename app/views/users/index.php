@@ -22,14 +22,21 @@
         </svg>
         Users
       </a>
-      <a href="<?=site_url('users/create')?>" class="inline-block bg-[#6e523d] hover:bg-[#4a3728] text-[#fdfaf5] font-bold px-6 py-2 rounded-md shadow-md transition duration-200 font-['Special_Elite']">
-        <span class="inline-flex items-center gap-2">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-          </svg>
-          Create New User
-        </span>
-      </a>
+      <div class="flex items-center gap-3">
+        <?php if ($current_role === 'admin'): ?>
+        <a href="<?=site_url('login')?>" class="bg-[#6e523d] hover:bg-[#4a3728] text-[#fdfaf5] font-bold px-4 py-2 rounded-full shadow transition duration-200">
+          Logout
+        </a>
+        <a href="<?=site_url('users/create')?>" class="inline-block bg-[#6e523d] hover:bg-[#4a3728] text-[#fdfaf5] font-bold px-6 py-2 rounded-md shadow-md transition duration-200 font-['Special_Elite']">
+          <span class="inline-flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            Create New User
+          </span>
+        </a>
+      </div>
+      <?php endif; ?>
     </div>
   </nav>
 
@@ -42,7 +49,7 @@
 
       <div class="p-10 relative z-10">
         <!-- Header -->
-        <div class="mb-8 text-center">
+        <div class="mb-8 text-center flex justify-between items-center">
           <h1 class="text-3xl font-bold text-[#4a3728] font-['Special_Elite'] tracking-wide flex items-center justify-center gap-3">
             <svg class="w-8 h-8 text-[#8b6b4f]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
@@ -50,11 +57,25 @@
             </svg>
             Users List
           </h1>
+          <?php if ($current_role === 'admin'): ?>
+          <a href="<?=site_url('login')?>" class="bg-[#6e523d] hover:bg-[#4a3728] text-[#fdfaf5] font-bold px-4 py-2 rounded-full shadow transition duration-200">
+            Logout
+          </a>
+          <?php endif; ?>
         </div>
+
+        <!-- Students List Header -->
+        <?php if ($current_role === 'admin'): ?>
+        <div class="mb-6 text-center">
+          <h1 class="text-3xl font-bold text-[#4a3728] font-['Special_Elite'] tracking-wide">
+            Students List
+          </h1>
+        </div>
+        <?php endif; ?>
 
         <!-- Search Form -->
         <div class="flex justify-center mb-10">
-          <form action="<?= site_url('/'); ?>" method="get" 
+          <form action="<?= site_url('users/index'); ?>" method="get" 
                 class="flex items-center w-full max-w-md bg-[#fdfaf5] border-2 border-[#8b6b4f] rounded-full shadow-md overflow-hidden">
             
             <?php
@@ -75,7 +96,7 @@
               <input 
                 type="text" 
                 name="q" 
-                placeholder="Search user..." 
+                placeholder="Search records..." 
                 value="<?= html_escape($q); ?>" 
                 id="searchBox"
                 class="w-full px-3 py-2 bg-transparent text-gray-700 focus:outline-none font-['EB_Garamond']"
@@ -100,11 +121,13 @@
                 <th class="py-3 px-4">Lastname</th>
                 <th class="py-3 px-4">Firstname</th>
                 <th class="py-3 px-4">Email</th>
+                <?php if ($current_role === 'admin'): ?>
                 <th class="py-3 px-4">Action</th>
+                <?php endif; ?>
               </tr>
             </thead>
             <tbody class="divide-y divide-[#b0977b]">
-              <?php foreach(html_escape($users) as $user): ?>
+              <?php foreach($users as $user): ?>
                 <tr class="hover:bg-[#f5f1e6] transition duration-200">
                   <td class="py-3 px-4 font-bold text-[#4a3728]"><?=($user['id']);?></td>
                   <td class="py-3 px-4 text-[#6b5a4a]"><?=($user['last_name']);?></td>
@@ -114,10 +137,12 @@
                       <?=($user['email']);?>
                     </span>
                   </td>
+                  <?php if ($current_role === 'admin'): ?>
                   <td class="py-3 px-4">
                     <a href="<?=site_url('users/update/'.$user['id']);?>" class="text-[#6e523d] hover:text-[#4a3728] font-bold underline underline-offset-2">Update</a> |
                     <a href="<?=site_url('users/delete/'.$user['id']);?>" onclick="return confirm('Are you sure you want to delete this record?');" class="text-[#8b3d3d] hover:text-red-700 font-bold underline underline-offset-2">Delete</a>
                   </td>
+                  <?php endif; ?>
                 </tr>
               <?php endforeach; ?>
             </tbody>
@@ -126,10 +151,32 @@
 
         <!-- Pagination -->
         <div class="mt-6 flex justify-center">
-          <div class="pagination flex space-x-2">
-              <?=$page ?? ''?>
+          <div class="inline-flex items-center space-x-2">
+            <?php if (isset($page)): ?>
+              <?= str_replace(
+                  ['<a ', '<strong>', '</strong>'],
+                  [
+                    '<a class="px-4 py-2 border border-[#8b6b4f] rounded-full text-[#6e523d] hover:bg-[#e0d4c3] transition duration-200" ',
+                    '<span class="px-4 py-2 bg-[#6e523d] text-[#fdfaf5] rounded-full font-extrabold text-lg ring-2 ring-[#8b6b4f] shadow-lg">',
+                    '</span>'
+                  ],
+                  $page
+              ); ?>
+            <?php endif; ?>
           </div>
         </div>
+
+        <!-- Create New User / Student Button -->
+        <?php if ($current_role === 'admin'): ?>
+        <div class="mt-6 text-center space-x-4">
+          <a href="<?=site_url('users/create')?>" class="bg-[#6e523d] hover:bg-[#4a3728] text-[#fdfaf5] font-bold px-6 py-2 rounded-full shadow transition duration-200 font-['Special_Elite']">
+            + Create New User
+          </a>
+          <a href="<?=site_url('users/create_student')?>" class="bg-[#6e523d] hover:bg-[#4a3728] text-[#fdfaf5] font-bold px-6 py-2 rounded-full shadow transition duration-200 font-['Special_Elite']">
+            + Create New Student
+          </a>
+        </div>
+        <?php endif; ?>
 
       </div>
     </div>

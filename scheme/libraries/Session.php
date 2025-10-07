@@ -126,6 +126,9 @@ class Session {
 	    ini_set('session.use_cookies', 1);
 	    ini_set('session.use_only_cookies', 1);
 	    ini_set('session.sid_length', $this->_get_sid_length());
+		if (PHP_VERSION_ID < 70100) {
+	    	ini_set('session.sid_length', $this->_get_sid_length());
+	    }
 
 	    if ( ! empty($this->config['sess_driver']) AND $this->config['sess_driver'] == 'file' ) {
 			require_once 'Session/FileSessionHandler.php';
@@ -373,7 +376,7 @@ class Session {
 	 * Unset Session Data
 	 *
 	 * @param  array  $keys Array of Sessions
-	 * @return function
+	 * @return void
 	 */
 	public function unset_userdata($keys)
 	{
@@ -423,7 +426,7 @@ class Session {
 	 */
 	public function unmark_flash($key)
 	{
-		if (empty($_SESSION['__ci_vars']))
+		if (empty($_SESSION['__lava_vars']))
 		{
 			return;
 		}
@@ -432,28 +435,32 @@ class Session {
 
 		foreach ($key as $k)
 		{
-			if (isset($_SESSION['__ci_vars'][$k]) && ! is_int($_SESSION['__ci_vars'][$k]))
+			if (isset($_SESSION['__lava_vars'][$k]) && ! is_int($_SESSION['__lava_vars'][$k]))
 			{
-				unset($_SESSION['__ci_vars'][$k]);
+				unset($_SESSION['__lava_vars'][$k]);
 			}
 		}
 
-		if (empty($_SESSION['__ci_vars']))
+		if (empty($_SESSION['__lava_vars']))
 		{
-			unset($_SESSION['__ci_vars']);
+			unset($_SESSION['__lava_vars']);
 		}
 	}
 
    	/**
-   	 * Get specific session key value
+	 * Get specific session key value
 
-   	 * @param  array $key Session Keys
-   	 * @return string      Session Data
+	 * @param  array|string|null $key Session Keys
+	 * @return string|null|array      Session Data
    	 */
 	public function userdata($key = NULL)
 	{
-		if(isset($key))
+		// If a specific key was requested, ensure it's a scalar (int|string)
+		if (isset($key))
 		{
+			if (!is_int($key) && !is_string($key)) {
+				return NULL;
+			}
 			return isset($_SESSION[$key]) ? $_SESSION[$key] : NULL;
 		}
 		elseif (empty($_SESSION))
@@ -463,14 +470,14 @@ class Session {
 		$userdata = array();
 		$_exclude = array_merge(
 			array('__lava_vars'),
-			$this->get_flash_keys(),
+			$this->get_flash_keys()
 		);
 
-		foreach (array_keys($_SESSION) as $key)
+		foreach (array_keys($_SESSION) as $sess_key)
 		{
-			if ( ! in_array($key, $_exclude, TRUE))
+			if ( ! in_array($sess_key, $_exclude, TRUE))
 			{
-				$userdata[$key] = $_SESSION[$key];
+				$userdata[$sess_key] = $_SESSION[$sess_key];
 			}
 		}
 
@@ -480,7 +487,7 @@ class Session {
 	/**
 	 * Session Destroy
 	 *
-	 * @return function
+	 * @return void
 	 */
 	public function sess_destroy()
 	{
@@ -490,13 +497,16 @@ class Session {
 	/**
 	 * Get flash data to Session
 	 *
-	 * @param  array $key Session Keys
-	 * @return string      Session Data
+	 * @param  array|string|null $key Session Keys
+	 * @return string|null|array      Session Data
 	 */
 	public function flashdata($key = NULL)
 	{
 		if (isset($key))
 		{
+			if (!is_int($key) && !is_string($key)) {
+				return NULL;
+			}
 			return (isset($_SESSION['__lava_vars'], $_SESSION['__lava_vars'][$key], $_SESSION[$key]) && ! is_int($_SESSION['__lava_vars'][$key]))
 				? $_SESSION[$key]
 				: NULL;
@@ -506,9 +516,9 @@ class Session {
 
 		if ( ! empty($_SESSION['__lava_vars']))
 		{
-			foreach ($_SESSION['__lava_vars'] as $key => &$value)
+			foreach ($_SESSION['__lava_vars'] as $fkey => &$value)
 			{
-				is_int($value) OR $flashdata[$key] = $_SESSION[$key];
+				is_int($value) OR $flashdata[$fkey] = $_SESSION[$fkey];
 			}
 		}
 
@@ -518,8 +528,8 @@ class Session {
 	/**
 	 * Set flash data to Session
 	 *
-	 * @param  array $key Session Keys
-	 * @return function
+	 * @param  array|string $key Session Keys
+	 * @return void
 	 */
 	public function set_flashdata($data, $value = NULL)
 	{
